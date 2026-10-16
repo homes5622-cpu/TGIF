@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서귀포시 기초생활보장 수급 현황 대시보드</title>
+<style>
+  :root{
+    --canvas:#ffffff; --surface-soft:#f7f7f7; --surface-card:#fafafa;
+    --surface-strong:#ebebeb; --surface-dark:#1a2129; --surface-dark-elev:#262e38;
+    --hairline:#e6e6e6; --hairline-strong:#cccccc;
+    --primary:#1c69d4; --primary-active:#0653b6;
+    --ink:#262626; --body:#3c3c3c; --body-strong:#1a1a1a;
+    --muted:#6b6b6b; --muted-soft:#9a9a9a;
+    --on-dark:#ffffff; --on-dark-soft:#bbbbbb;
+    --warning:#f59e0b; --success:#22c55e;
+    --sp-xs:8px; --sp-sm:12px; --sp-md:16px; --sp-lg:24px; --sp-xl:32px; --sp-xxl:48px; --sp-section:80px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--canvas); color:var(--body); font-weight:300; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1440px;margin:0 auto;padding:0 var(--sp-xl)}
+  .eyebrow{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+
+  /* ---------- top nav ---------- */
+  .nav{height:64px;display:flex;align-items:center;justify-content:space-between;
+       border-bottom:1px solid var(--hairline);background:var(--canvas);position:sticky;top:0;z-index:10}
+  .nav .brand{display:flex;align-items:center;gap:var(--sp-sm)}
+  .badge{width:32px;height:32px;border-radius:50%;background:var(--surface-dark);color:#fff;
+         display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.5px}
+  .nav .title{font-size:14px;font-weight:700;color:var(--ink);letter-spacing:.3px}
+  .nav ul{display:flex;gap:var(--sp-lg);list-style:none}
+  .nav ul a{font-size:14px;font-weight:400;letter-spacing:.3px;color:var(--muted);text-decoration:none}
+  .nav ul a.on{color:var(--ink);font-weight:700}
+
+  /* ---------- hero ---------- */
+  .hero{background:var(--surface-dark);color:var(--on-dark);padding:var(--sp-section) 0}
+  .hero .eyebrow{color:var(--primary)}
+  .hero h1{font-size:64px;font-weight:700;line-height:1.05;color:#fff;margin:var(--sp-md) 0}
+  .hero p{font-size:16px;font-weight:300;color:var(--on-dark-soft);max-width:720px}
+  .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#3a424c;margin-top:var(--sp-xxl)}
+  .hero-stats div{background:var(--surface-dark-elev);padding:var(--sp-lg)}
+  .hero-stats .v{font-size:32px;font-weight:700;color:#fff;line-height:1.15}
+  .hero-stats .l{font-size:12px;font-weight:400;letter-spacing:.5px;color:var(--on-dark-soft);margin-top:6px}
+
+  /* ---------- sections ---------- */
+  section{padding:var(--sp-section) 0}
+  section.soft{background:var(--surface-soft)}
+  .sec-head{margin-bottom:var(--sp-xl)}
+  .sec-head .eyebrow{color:var(--primary)}
+  .sec-head h2{font-size:32px;font-weight:700;color:var(--ink);line-height:1.15;margin-top:var(--sp-xs)}
+  .sec-head .sub{font-size:16px;font-weight:300;color:var(--muted);margin-top:var(--sp-sm);max-width:760px}
+
+  /* ---------- stat cards ---------- */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-lg)}
+  .card{background:var(--canvas);border:1px solid var(--hairline);padding:var(--sp-lg);border-radius:0}
+  .card.plate{background:var(--surface-card)}
+  .card .eyebrow{color:var(--muted);font-size:12px;letter-spacing:1.2px}
+  .card .big{font-size:40px;font-weight:700;color:var(--ink);line-height:1.1;margin:var(--sp-sm) 0 4px}
+  .card .big small{font-size:16px;font-weight:300;color:var(--muted);margin-left:4px}
+  .card .note{font-size:14px;font-weight:300;color:var(--body)}
+  .card .rule{height:3px;width:40px;background:var(--primary);margin-bottom:var(--sp-md)}
+
+  .bar-track{height:6px;background:var(--surface-strong);margin-top:var(--sp-md)}
+  .bar-fill{height:6px;background:var(--primary)}
+
+  /* ---------- chart blocks ---------- */
+  .grid-2{display:grid;grid-template-columns:1.45fr 1fr;gap:var(--sp-lg)}
+  .panel{background:var(--canvas);border:1px solid var(--hairline);padding:var(--sp-lg)}
+  .panel h3{font-size:18px;font-weight:700;color:var(--ink);line-height:1.4}
+  .panel .cap{font-size:12px;font-weight:400;letter-spacing:.5px;color:var(--muted);margin-top:4px}
+  .legend{display:flex;gap:var(--sp-lg);margin:var(--sp-md) 0 var(--sp-xs);font-size:12px;color:var(--muted);letter-spacing:.5px}
+  .legend i{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .ax{font-size:11px;fill:var(--muted);font-weight:400}
+  .vl{font-size:11px;fill:var(--ink);font-weight:700}
+
+  /* ---------- type table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:14px;font-weight:300}
+  th{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+     text-align:left;padding:var(--sp-sm) var(--sp-md);border-bottom:1px solid var(--hairline-strong)}
+  td{padding:var(--sp-md);border-bottom:1px solid var(--hairline);color:var(--body);vertical-align:top}
+  td .tag{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;
+          font-size:13px;font-weight:700;color:#fff;background:var(--ink)}
+  td .tag.a{background:var(--primary)} td .tag.b{background:var(--surface-dark)}
+  td .tag.c{background:var(--warning)} td .tag.d{background:var(--hairline-strong);color:var(--ink)}
+  td.strong{color:var(--ink);font-weight:700}
+
+  /* ---------- steps (dark band) ---------- */
+  .dark{background:var(--surface-dark);color:var(--on-dark)}
+  .dark .sec-head h2{color:#fff}
+  .dark .sec-head .sub{color:var(--on-dark-soft)}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#3a424c}
+  .step{background:var(--surface-dark-elev);padding:var(--sp-lg);min-height:230px;display:flex;flex-direction:column}
+  .step .n{font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--primary)}
+  .step h4{font-size:20px;font-weight:700;color:#fff;margin:var(--sp-sm) 0 4px;line-height:1.3}
+  .step .per{font-size:12px;font-weight:400;letter-spacing:.5px;color:var(--on-dark-soft)}
+  .step ul{list-style:none;margin-top:var(--sp-md);font-size:14px;font-weight:300;color:var(--on-dark-soft)}
+  .step li{padding-left:14px;position:relative;margin-bottom:6px;line-height:1.5}
+  .step li:before{content:"";position:absolute;left:0;top:9px;width:5px;height:5px;background:var(--primary)}
+
+  /* ---------- callout ---------- */
+  .callout{border-left:3px solid var(--warning);background:var(--surface-card);padding:var(--sp-lg);margin-top:var(--sp-xl)}
+  .callout .eyebrow{color:var(--warning)}
+  .callout p{font-size:14px;font-weight:300;color:var(--body);margin-top:var(--sp-xs)}
+
+  /* ---------- footer ---------- */
+  footer{background:var(--surface-soft);padding:64px 0 var(--sp-xl)}
+  .fcols{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-lg)}
+  .fcols h5{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink);margin-bottom:var(--sp-sm)}
+  .fcols li{list-style:none;font-size:14px;font-weight:300;color:var(--muted);margin-bottom:6px}
+  .copy{font-size:14px;font-weight:300;color:var(--muted);margin-top:var(--sp-xl);
+        padding-top:var(--sp-md);border-top:1px solid var(--hairline)}
+
+  @media(max-width:1024px){
+    .cards,.hero-stats,.steps,.fcols{grid-template-columns:repeat(2,1fr)}
+    .grid-2{grid-template-columns:1fr}
+    .nav ul{display:none}
+  }
+  @media(max-width:768px){
+    .wrap{padding:0 var(--sp-md)}
+    .hero h1{font-size:40px}
+    .cards,.hero-stats,.steps,.fcols{grid-template-columns:1fr}
+    section{padding:var(--sp-xxl) 0}
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap" style="display:flex;align-items:center;justify-content:space-between;width:100%">
+    <div class="brand">
+      <div class="badge">SGP</div>
+      <span class="title">서귀포시 복지정책 대시보드</span>
+    </div>
+    <ul>
+      <li><a class="on" href="#overview">현황</a></li>
+      <li><a href="#region">지역 분석</a></li>
+      <li><a href="#type">유형 분류</a></li>
+      <li><a href="#plan">실행계획</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO : dark band -->
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">2024-04-30 기준 · 공공데이터 원본</div>
+    <h1>기초생활보장<br>수급 현황 진단</h1>
+    <p>읍면동 17개 지역의 수급 규모와 조건부수급 비중을 함께 보고 지원 우선순위를 정합니다. 2020~2023년 구간은 교육용 가상데이터이므로 시계열 해석에서 제외했습니다.</p>
+    <div class="hero-stats">
+      <div><div class="v">7,197</div><div class="l">수급 가구</div></div>
+      <div><div class="v">10,237</div><div class="l">수급권자 (명)</div></div>
+      <div><div class="v">1.42</div><div class="l">가구당 수급권자</div></div>
+      <div><div class="v">17</div><div class="l">분석 읍면동</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- OVERVIEW : light -->
+<section id="overview">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Overview</div>
+      <h2>수급 유형 구성</h2>
+      <div class="sub">일반수급자가 전체의 82.2%를 차지하며, 자활·고용 지원 필요도를 보여 주는 조건부수급자가 15.6%로 뒤를 잇습니다.</div>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="rule"></div>
+        <div class="eyebrow">일반수급자</div>
+        <div class="big">8,417<small>명</small></div>
+        <div class="note">6,158가구 · 가구당 1.37명</div>
+        <div class="bar-track"><div class="bar-fill" style="width:82.2%"></div></div>
+        <div class="note" style="margin-top:8px;color:var(--muted)">구성비 82.2%</div>
+      </div>
+      <div class="card">
+        <div class="rule"></div>
+        <div class="eyebrow">조건부수급자</div>
+        <div class="big">1,598<small>명</small></div>
+        <div class="note">851가구 · 가구당 1.88명</div>
+        <div class="bar-track"><div class="bar-fill" style="width:15.6%"></div></div>
+        <div class="note" style="margin-top:8px;color:var(--muted)">구성비 15.6%</div>
+      </div>
+      <div class="card">
+        <div class="rule"></div>
+        <div class="eyebrow">특례수급자</div>
+        <div class="big">161<small>명</small></div>
+        <div class="note">127가구 · 동홍동·대천동이 31.7%</div>
+        <div class="bar-track"><div class="bar-fill" style="width:1.6%"></div></div>
+        <div class="note" style="margin-top:8px;color:var(--muted)">구성비 1.6%</div>
+      </div>
+      <div class="card">
+        <div class="rule"></div>
+        <div class="eyebrow">시설수급자</div>
+        <div class="big">61<small>명</small></div>
+        <div class="note">영천동 15명 · 시설 소재지 효과로 분리</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0.6%"></div></div>
+        <div class="note" style="margin-top:8px;color:var(--muted)">구성비 0.6%</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REGION : soft -->
+<section id="region" class="soft">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Regional Analysis</div>
+      <h2>규모와 비중은 다른 지역을 가리킨다</h2>
+      <div class="sub">수급권자 상위 5개 지역에 53.6%(5,487명)가 집중되지만, 조건부 비중은 중앙동·대륜동·효돈동 등 규모가 작은 동 지역에서 더 높습니다.</div>
+    </div>
+
+    <div class="grid-2">
+      <!-- bar chart -->
+      <div class="panel">
+        <h3>읍면동별 수급권자 규모</h3>
+        <div class="cap">단위: 명 · 상위 12개 지역</div>
+        <svg viewBox="0 0 620 420" role="img" aria-label="읍면동별 수급권자 막대 차트">
+          <!-- grid -->
+          <g stroke="#e6e6e6" stroke-width="1">
+            <line x1="90" y1="0" x2="90" y2="400"/>
+            <line x1="222" y1="0" x2="222" y2="400"/>
+            <line x1="354" y1="0" x2="354" y2="400"/>
+            <line x1="486" y1="0" x2="486" y2="400"/>
+            <line x1="618" y1="0" x2="618" y2="400"/>
+          </g>
+          <g class="ax" text-anchor="middle">
+            <text x="90" y="415">0</text><text x="222" y="415">400</text>
+            <text x="354" y="415">800</text><text x="486" y="415">1,200</text><text x="618" y="415">1,600</text>
+          </g>
+          <g>
+            <!-- scale: 1 unit = 0.33px ; width = v*0.33 -->
+            <g transform="translate(0,4)">
+              <text class="ax" x="82" y="16" text-anchor="end">동홍동</text><rect x="90" y="4" width="501" height="18" fill="#1c69d4"/><text class="vl" x="599" y="18">1,518</text>
+            </g>
+            <g transform="translate(0,36)">
+              <text class="ax" x="82" y="16" text-anchor="end">대정읍</text><rect x="90" y="4" width="397" height="18" fill="#1c69d4"/><text class="vl" x="495" y="18">1,203</text>
+            </g>
+            <g transform="translate(0,68)">
+              <text class="ax" x="82" y="16" text-anchor="end">성산읍</text><rect x="90" y="4" width="338" height="18" fill="#1c69d4"/><text class="vl" x="436" y="18">1,024</text>
+            </g>
+            <g transform="translate(0,100)">
+              <text class="ax" x="82" y="16" text-anchor="end">남원읍</text><rect x="90" y="4" width="303" height="18" fill="#1c69d4"/><text class="vl" x="401" y="18">917</text>
+            </g>
+            <g transform="translate(0,132)">
+              <text class="ax" x="82" y="16" text-anchor="end">대천동</text><rect x="90" y="4" width="272" height="18" fill="#1c69d4"/><text class="vl" x="370" y="18">825</text>
+            </g>
+            <g transform="translate(0,164)">
+              <text class="ax" x="82" y="16" text-anchor="end">표선면</text><rect x="90" y="4" width="201" height="18" fill="#6b9ae4"/><text class="vl" x="299" y="18">608</text>
+            </g>
+            <g transform="translate(0,196)">
+              <text class="ax" x="82" y="16" text-anchor="end">대륜동</text><rect x="90" y="4" width="185" height="18" fill="#6b9ae4"/><text class="vl" x="283" y="18">560</text>
+            </g>
+            <g transform="translate(0,228)">
+              <text class="ax" x="82" y="16" text-anchor="end">서홍동</text><rect x="90" y="4" width="181" height="18" fill="#6b9ae4"/><text class="vl" x="279" y="18">549</text>
+            </g>
+            <g transform="translate(0,260)">
+              <text class="ax" x="82" y="16" text-anchor="end">중문동</text><rect x="90" y="4" width="158" height="18" fill="#a9c4ee"/><text class="vl" x="256" y="18">480</text>
+            </g>
+            <g transform="translate(0,292)">
+              <text class="ax" x="82" y="16" text-anchor="end">중앙동</text><rect x="90" y="4" width="153" height="18" fill="#a9c4ee"/><text class="vl" x="251" y="18">464</text>
+            </g>
+            <g transform="translate(0,324)">
+              <text class="ax" x="82" y="16" text-anchor="end">안덕면</text><rect x="90" y="4" width="152" height="18" fill="#a9c4ee"/><text class="vl" x="250" y="18">461</text>
+            </g>
+            <g transform="translate(0,356)">
+              <text class="ax" x="82" y="16" text-anchor="end">효돈동</text><rect x="90" y="4" width="137" height="18" fill="#a9c4ee"/><text class="vl" x="235" y="18">415</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <!-- lollipop : conditional ratio -->
+      <div class="panel">
+        <h3>조건부수급 비중 상위 지역</h3>
+        <div class="cap">단위: % · 시 평균 15.7% (시설수급자 제외)</div>
+        <div class="legend">
+          <span><i style="background:#1c69d4"></i>지역 비중</span>
+          <span><i style="background:#f59e0b"></i>시 평균 15.7%</span>
+        </div>
+        <svg viewBox="0 0 420 390" role="img" aria-label="조건부수급 비중 차트">
+          <!-- average line : x = 40 + 15.7*16 = 291.2 -->
+          <line x1="291" y1="6" x2="291" y2="340" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 4"/>
+          <text class="ax" x="291" y="356" text-anchor="middle" fill="#f59e0b" font-weight="700">평균 15.7</text>
+          <g>
+            <g transform="translate(0,0)">
+              <text class="ax" x="70" y="18" text-anchor="end">중앙동</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="378" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="392" y="17">21.1</text>
+            </g>
+            <g transform="translate(0,38)">
+              <text class="ax" x="70" y="18" text-anchor="end">대륜동</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="375" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="375" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="389" y="17">20.9</text>
+            </g>
+            <g transform="translate(0,76)">
+              <text class="ax" x="70" y="18" text-anchor="end">효돈동</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="361" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="361" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="375" y="17">20.0</text>
+            </g>
+            <g transform="translate(0,114)">
+              <text class="ax" x="70" y="18" text-anchor="end">정방동</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="356" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="356" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="370" y="17">19.7</text>
+            </g>
+            <g transform="translate(0,152)">
+              <text class="ax" x="70" y="18" text-anchor="end">서홍동</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="348" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="348" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="362" y="17">19.2</text>
+            </g>
+            <g transform="translate(0,190)">
+              <text class="ax" x="70" y="18" text-anchor="end">표선면</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="322" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="322" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="336" y="17">17.6</text>
+            </g>
+            <g transform="translate(0,228)">
+              <text class="ax" x="70" y="18" text-anchor="end">송산동</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="314" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="314" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="328" y="17">17.1</text>
+            </g>
+            <g transform="translate(0,266)">
+              <text class="ax" x="70" y="18" text-anchor="end">남원읍</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="302" y2="13" stroke="#1c69d4" stroke-width="3"/>
+              <circle cx="302" cy="13" r="6" fill="#1c69d4"/><text class="vl" x="316" y="17">16.4</text>
+            </g>
+            <g transform="translate(0,304)">
+              <text class="ax" x="70" y="18" text-anchor="end">동홍동</text>
+              <line x1="78" y1="13" x2="378" y2="13" stroke="#ebebeb" stroke-width="2"/>
+              <line x1="78" y1="13" x2="288" y2="13" stroke="#cccccc" stroke-width="3"/>
+              <circle cx="288" cy="13" r="6" fill="#cccccc"/><text class="vl" x="302" y="17" fill="#6b6b6b">15.5</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="cards" style="margin-top:var(--sp-lg)">
+      <div class="card plate">
+        <div class="eyebrow">상위 5개 지역 집중도</div>
+        <div class="big">53.6<small>%</small></div>
+        <div class="note">동홍동·대정읍·성산읍·남원읍·대천동 합계 5,487명</div>
+      </div>
+      <div class="card plate">
+        <div class="eyebrow">동 지역 조건부 비중</div>
+        <div class="big">17.0<small>%</small></div>
+        <div class="note">읍면 지역 13.8% 대비 3.2%p 높음</div>
+      </div>
+      <div class="card plate">
+        <div class="eyebrow">영천동 시설수급자</div>
+        <div class="big">15<small>명</small></div>
+        <div class="note">시 전체 시설수급자의 24.6% · 지역 수요 지표에서 분리</div>
+      </div>
+      <div class="card plate">
+        <div class="eyebrow">수급률 지표</div>
+        <div class="big" style="color:var(--muted-soft)">산출 예정</div>
+        <div class="note">읍면동 주민등록인구 확보 후 재가 수급률 산출</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TYPE : light -->
+<section id="type">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">Classification</div>
+      <h2>지역 유형 분류 (잠정)</h2>
+      <div class="sub">규모 기준 수급권자 500명 이상, 비중 기준 시 평균 15.70% 초과. 수급률이 산출되면 전면 재분류합니다.</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th style="width:70px">유형</th><th style="width:110px">규모</th><th style="width:130px">조건부 비중</th><th>해당 지역</th><th style="width:30%">지원 방향</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag a">A</span></td><td class="strong">큼</td><td class="strong">높음</td>
+          <td>남원읍 · 대천동 · 표선면 · 대륜동 · 서홍동</td>
+          <td>자활·고용 연계와 사례관리 인력을 함께 보강</td>
+        </tr>
+        <tr>
+          <td><span class="tag b">B</span></td><td class="strong">큼</td><td>평균 이하</td>
+          <td>동홍동 · 대정읍 · 성산읍</td>
+          <td>일반수급자 사례관리·돌봄 중심, 업무량에 맞춘 인력 배치</td>
+        </tr>
+        <tr>
+          <td><span class="tag c">C</span></td><td>작음</td><td class="strong">높음</td>
+          <td>중앙동 · 효돈동 · 정방동 · 송산동 · 예래동</td>
+          <td>인접 동과 묶은 공동 자활·고용 상담</td>
+        </tr>
+        <tr>
+          <td><span class="tag d">D</span></td><td>작음</td><td>평균 이하</td>
+          <td>중문동 · 안덕면 · 천지동 · 영천동</td>
+          <td>기본 사례관리 유지, 영천동은 시설 연계 별도 관리</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="eyebrow">데이터 주의사항</div>
+      <p>2020~2023년 값은 2024년 원본에 배율과 잡음을 적용해 생성한 교육용 가상데이터입니다. 지역별 증가율 차이는 생성 규칙에서 비롯된 것이므로 추세 해석에 사용하지 않습니다. 2025년 자료의 이상치(12,660 / 9999 / −139)는 분석에서 제외했습니다. 성산읍 특례수급자(10가구 / 9명)는 가구수보다 인원이 적어 원자료 담당 부서 확인이 필요합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PLAN : dark band -->
+<section id="plan" class="dark">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow" style="color:var(--primary)">Action Plan</div>
+      <h2>정비 → 조사 → 시범 → 확대</h2>
+      <div class="sub">단계마다 다음 단계로 넘어갈 조건을 두고, 시범사업 성과 기준을 넘긴 사업만 확대합니다.</div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="n">STEP 01</div>
+        <h4>즉시 정비</h4>
+        <div class="per">0~6개월 · 추가 예산 거의 없음</div>
+        <ul>
+          <li>데이터 품질 점검</li>
+          <li>읍면동 수급률 산출</li>
+          <li>1인당 사례 수 파악</li>
+          <li>시설수급자 분리 관리</li>
+        </ul>
+      </div>
+      <div class="step">
+        <div class="n">STEP 02</div>
+        <h4>조사·평가</h4>
+        <div class="per">6~18개월</div>
+        <ul>
+          <li>기존 자활사업 성과 평가</li>
+          <li>조건부수급자 개별 평가</li>
+          <li>읍면 접근성 조사</li>
+          <li>지역 고용 여건 조사</li>
+        </ul>
+      </div>
+      <div class="step">
+        <div class="n">STEP 03</div>
+        <h4>시범사업</h4>
+        <div class="per">2년차 · 1년 이상 운영</div>
+        <ul>
+          <li>공동 자활 상담창구 (중앙·정방·송산)</li>
+          <li>자활 연계 강화 (대륜동·남원읍)</li>
+          <li>이동식 복지 상담</li>
+          <li>사례관리 인력 보강 (동홍동)</li>
+        </ul>
+      </div>
+      <div class="step">
+        <div class="n">STEP 04</div>
+        <h4>확대·조정</h4>
+        <div class="per">3년차 이후</div>
+        <ul>
+          <li>성과 기준 충족 사업만 확대</li>
+          <li>국비·도비·시비 분담 계획</li>
+          <li>운영비 지속 사업은 비용편익 분석</li>
+          <li>성과 미달 사업 구조 개선·종료</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:var(--sp-xl);border-left:3px solid var(--primary);padding-left:var(--sp-lg)">
+      <p style="font-size:16px;font-weight:300;color:var(--on-dark-soft);max-width:860px">
+        탈수급률은 단독 목표로 쓰지 않습니다. 탈수급만 성과로 잡으면 권리 보장보다 자격 종료를 우선하게 되므로, 탈수급 후 소득 안정성과 재수급률을 반드시 함께 측정합니다.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fcols">
+      <div>
+        <h5>분석 범위</h5>
+        <ul>
+          <li>2024-04-30 기준 원본</li>
+          <li>읍면동 17개 지역</li>
+          <li>수급 유형 5종</li>
+        </ul>
+      </div>
+      <div>
+        <h5>핵심 지표</h5>
+        <ul>
+          <li>수급자 규모 · 시 점유율</li>
+          <li>조건부 비중</li>
+          <li>재가 수급률 (산출 예정)</li>
+        </ul>
+      </div>
+      <div>
+        <h5>필수 추가 자료</h5>
+        <ul>
+          <li>읍면동 주민등록인구</li>
+          <li>실제 연도별 수급자 자료</li>
+          <li>자활사업 성과·비용 자료</li>
+        </ul>
+      </div>
+      <div>
+        <h5>문서</h5>
+        <ul>
+          <li>최종보고서 v2</li>
+          <li>요약보고 PPT</li>
+          <li>부록 A · B</li>
+        </ul>
+      </div>
+    </div>
+    <div class="copy">
+      출처: 서귀포시 기초생활보장수급자 현황(공공데이터, 2024-04-30 기준) · 작성일 2026-10-15 · 수급률 지표는 주민등록인구 확보 후 갱신 예정
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
